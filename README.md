@@ -1,4 +1,4 @@
-# Neural-Net-Playground
+# Neural-Net-Playground (In Progress)
 A remake of TensorFlow playground in pure java.
 
 A Neural Network playground application where the user can add layers, activation functions, and customize their neural network to fit some data. (This will be similar to TensorFlow playground)
