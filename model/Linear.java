@@ -1,15 +1,13 @@
 package model;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-
 // A linear layer in a Neural Network
 public class Linear {
     Value[][] weights;
     Value[] biases;
 
     /*
-     * EFFECTS: initializes weights and biases to random values
+     * EFFECTS: initializes weights and biases to random values between (-1, 1)
+     * in is input size, out is ouput size
      * the weights is a matrix of shape (in, out)
      * the biases is a vector of shape (out)
     */
@@ -27,7 +25,6 @@ public class Linear {
     }
 
     public Value[][] forward(Value[][] input){
-        assertEquals(input[0].length, weights.length);
 
         Value[][] out = new Value[input.length][weights[0].length];
 
