@@ -1,25 +1,37 @@
-# My Personal Project
+# Neural Net Playground
 
-## Neural Net Playground
+A **console-based** neural network playground in Java. You build a small MLP (multi-layer perceptron), choose a 2D dataset, and train the model from a text menu in the terminal—inspired by [TensorFlow Playground](https://playground.tensorflow.org/), but without a graphical UI.
 
-A Neural Network playground application where the user can add layers, activation functions, and customize their neural network to fit some data. (This will be similar to TensorFlow playground)
+The network is implemented on top of a **custom autograd engine**: scalar values form a computation graph and gradients are computed automatically via backpropagation, so no external ML library is used.
 
-Features include:
-* Specifying number of neurons per layer
-* Adding however many layers to the network
-* Choosing activation functions
-* Visualizing how the model fits the data
-* Graphs showing training/validation loss per epoch
+---
 
-## What will the application do?
-This application will simulate how a neural network will fit/not fit to some data, allowing the user to customize their neural net to their liking. 
-## Who will use it?
-Anybody interest in machine learning or beginners getting into it.
-## Why is this project of interest to you?
-This project is of interest for me because I love machine learning and TensorFlow playground was a big inspiration for me when I first started.
+## What the program does
 
-## User stories
-* As a user, I want to be able to add a new layer to my neural network and specify the number of neurons and the activation function.
-* As a user, I want to be able to view a list of all layers currently in my model, showing their type, dimensions, and parameter counts.
-* As a user, I want to be able to visualize the loss of the model as it trains.
-* As a user, I want to be able to choose the dataset the model is going to train on.
+The application is **entirely terminal-based**. When you run it, a numbered menu appears. You interact by typing numbers and values at the prompts.
+
+- **Build the network**  
+  Add hidden layers one at a time and specify how many neurons each layer has. The model always has 2 inputs (for 2D points) and 1 output (binary classification).
+
+- **Choose a dataset**  
+  Pick one of: Two Blobs, Four Blobs, Concentric Circles, or Double Spiral. The data is used as (input, target) pairs for training.
+
+- **Configure training**  
+  Set the activation function (None, TanH, or ReLU) and the learning rate. You can reset the MLP or clear layer sizes and start over.
+
+- **Train**  
+  Run training for 100 epochs. Loss is printed every 10 epochs. Training uses MSE loss and your chosen learning rate.
+
+- **Visualize data**  
+  Print the current dataset in the console as a grid of `O` and `X` (the two classes).
+
+There is no GUI—all interaction is through the console menu and keyboard input.
+
+---
+
+### From an IDE
+
+1. Open the project and set the **source root** to `src/main` (so `model` and `ui` are packages).
+2. Run the **`Run`** class: open `src/main/ui/Run.java` and run the program.
+
+
