@@ -1,24 +1,30 @@
 package ui;
 
 import model.*;
-
+import persistence.*;
 import java.util.Scanner;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.io.FileNotFoundException; 
+import java.io.IOException;
 
+// Neural Net PlayGround Runner
 public class Run {
     private static final int TRAIN_EPOCHS = 100;
+    private static final String JSON_STORE = "./data/savedModel.json";
+    private static final int SIDE = 75;
 
     private Scanner scanner = new Scanner(System.in);
     private GeneratePoints generator = new GeneratePoints();
     private MLP mlp;
+
+    private String dataset;
     private Value[][] inputs;
     private Value[][] targets;
-    private int side = 75;
     private double lr = 0.01;
 
     private ArrayList<Integer> layerSizes = new ArrayList<>();
-    private String activation = "TanH";
+    private String activation = "None";
     
     // EFFECTS: creates instance of the application
     public Run() {
@@ -42,6 +48,8 @@ public class Run {
         System.out.println("7. Reset MLP");
         System.out.println("8. Reset Layer Sizes");
         System.out.println("9. Train Model");
+        System.out.println("10. Save Model");
+        System.out.println("11. Load Model");
         System.out.println("111. Quit");
     }
 
@@ -53,7 +61,7 @@ public class Run {
                 addLayer();
                 break;
             case 2:
-                viewLayers();
+                viewSetup();
                 break;
             case 3:
                 pickData();
@@ -76,6 +84,12 @@ public class Run {
             case 9:
                 train();
                 break;
+            case 10:
+                saveModel();
+                break;
+            case 11:
+                loadModel();
+                break;
             case 111:
                 System.out.println("Exiting...");
                 System.exit(0);
@@ -92,22 +106,24 @@ public class Run {
         System.out.print("Enter number of neurons for this layer: ");
         int size = scanner.nextInt();
         layerSizes.add(size);
-        viewLayers();
+        viewSetup();
     }
 
-    // EFFECTS: displays the current layers to the user
-    public void viewLayers() {
+    // EFFECTS: displays the current MLP setup to the user
+    public void viewSetup() {
         if (layerSizes.isEmpty()) {
             System.out.println("No layers defined yet.");
         } else {
             System.out.println("Architecture: Input(2) -> " + layerSizes + " -> Output(1)");
+            System.out.println("Learning Rate: " + this.lr);
             System.out.println("Activation: " + ((activation.length() > 0) ? activation : "None"));
+            System.out.println("Dataset: " + this.dataset);
         }
     }
 
-    // MODIFIES: inputs, targets
-    // EFFECTS: allows the user to pick their dataset
-    @SuppressWarnings("methodlength")
+    /*  EFFECTS: allows the user to pick their data and sets 
+     * the inputs and targets to be of that data.
+    */
     public void pickData() {
         System.out.println("Select Data:");
         System.out.println("0. Two Blobs");
@@ -116,31 +132,31 @@ public class Run {
         System.out.println("3. Double Spiral");
         
         int choice = scanner.nextInt();
-        ArrayList<Value[][]> data;
 
         if (choice == 0) {
-            data = generator.twoBlobs(side);
-            inputs = data.get(0);
-            targets = data.get(1);
-            System.out.println("Data set to Two Blobs");
+            this.dataset = "twoBlobs";
         } else if (choice == 1) {
-            data = generator.fourBlobs(side);
-            inputs = data.get(0);
-            targets = data.get(1);
-            System.out.println("Data set to Four Blobs");
+            this.dataset = "fourBlobs";
         } else if (choice == 2) {
-            data = generator.concentricCircles(side);
-            inputs = data.get(0);
-            targets = data.get(1);
-            System.out.println("Data set to Concentric Circles");
+            this.dataset = "concentricCircles";
         } else if (choice == 3) {
-            data = generator.doubleSpiral(side);
-            inputs = data.get(0);
-            targets = data.get(1);
-            System.out.println("Data set to Double Spiral");
+            this.dataset = "doubleSpiral";
         } else {
-            System.out.println("Invalid choice. Keeping current data");
+            System.out.println("Invalid choice, keeping current data");
+            return;
         }
+        setData(this.dataset);
+    }
+
+    // REQUIRES: dataset one of "twoBlobs", "fourBlobs", "concentricCircle", "doubleSpiral"
+    // MODIFIES: inputs, targets, dataset
+    /* EFFECTS: sets inputs and targets to the dataset given.
+    */
+    public void setData(String dataset) {
+        ArrayList<Value[][]> data = generator.getDataset(SIDE, dataset);
+        inputs = data.get(0);
+        targets = data.get(1);
+        System.out.println("Dataset set to: " + this.dataset);
     }
 
     // MODIFIES: activation
@@ -154,7 +170,7 @@ public class Run {
         int choice = scanner.nextInt();
         
         if (choice == 0) {
-            this.activation = ""; 
+            this.activation = "None"; 
             System.out.println("Activation set to: None");
         } else if (choice == 1) {
             this.activation = "TanH";
@@ -172,9 +188,9 @@ public class Run {
         if (targets == null) {
             System.out.println("No data picked");
         } else {
-            for (int i = 0; i < side; i++) {
-                for (int j = 0; j < side; j++) {
-                    int index = i * side + j;
+            for (int i = 0; i < SIDE; i++) {
+                for (int j = 0; j < SIDE; j++) {
+                    int index = i * SIDE + j;
                     Value target = targets[index][0];
 
                     if (target == null) {
@@ -197,8 +213,12 @@ public class Run {
     public void setLearningRate() {
         System.out.println("Pick a learning rate");
         double newLR = scanner.nextDouble();
+        while (newLR < 0) {
+            System.out.println("Learning Rate must be greater than 0");
+            newLR = scanner.nextDouble();
+        }
         lr = newLR;
-        System.out.println("New Learning Rate" + lr);
+        System.out.println("New Learning Rate: " + lr);
     }
 
     // EFFECTS: reinitializes MLP
@@ -277,4 +297,47 @@ public class Run {
             p.setGrad(0.0);
         }
     }
+
+    // MODIFIES: JSON_STORE file
+    // EFFECTS: saves the current mlp state to file
+    private void saveModel() {
+        if (mlp == null) {
+            System.out.println("Initialize and train a model before saving!");
+            return;
+        }
+
+        JsonWriter writer = new JsonWriter(JSON_STORE);
+        try {
+            mlp.setSavingState(lr, dataset);
+            writer.open();
+            writer.write(mlp);
+            writer.close();
+            System.out.println("Saved model to " + JSON_STORE);
+        } catch (FileNotFoundException e) {
+            System.out.println("Unable to write to file: " + JSON_STORE);
+        }
+    }
+
+    // MODIFIES: this.mlp
+    // EFFECTS: loads mlp state from file and prints out loaded setup
+    private void loadModel() {
+        JsonReader reader = new JsonReader(JSON_STORE);
+        try {
+            mlp = reader.read();
+        
+            this.layerSizes = mlp.getHiddenDims();
+            this.activation = mlp.getActivation();
+            this.lr = mlp.getLr();
+            this.dataset = mlp.getDataset();
+
+            if (dataset != null) {
+                setData(dataset);
+            }
+            
+            System.out.println("Model successfully loaded from " + JSON_STORE);
+            viewSetup();
+        } catch (IOException e) {
+            System.out.println("Unable to read from file: " + JSON_STORE);
+        }
+    }    
 }

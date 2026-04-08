@@ -70,7 +70,7 @@ public class Linear {
      * the value
     */
     public Value handleActivation(Value v, String activation) {
-        if (activation.equals("")) {
+        if (activation.equals("None")) {
             return v;
         } else if (activation.equals("TanH")) {
             return v.tanh().mul(new Value(5.0 / 3.0)); // apply a gain of 5/3x
